@@ -140,3 +140,10 @@ class analyse_music_history:
         print(f"Total listening time: {total_listening_hours:.2f} hours")
         print(f"Unique artists: {unique_artists}")
         print(f"Unique songs: {unique_songs}")
+
+        data = {
+            "total_hours": round(total_listening_hours, 2),
+            "unique_artists": int(unique_artists),
+            "unique_songs": int(unique_songs)
+        }
+        return data
