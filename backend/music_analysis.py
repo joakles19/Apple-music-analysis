@@ -2,148 +2,137 @@ import pandas as pd
 
 class analyse_music_history:
     def __init__(self, filepath):
-        #Unchanged df
+        # Load CSV and parse dates
         self.history_df = pd.read_csv(filepath)
         self.history_df['Date Played'] = pd.to_datetime(self.history_df['Date Played'], format='%Y%m%d')
 
-        #Cleaned df
+        # Clean dataframe (split artist and song)
         self.df_clean = self.__clean_song_formats(self.history_df)
-    
-    def __top_songs(self, start_date=None, end_date=None) -> pd.Series:
-        df = self.__filter_by_date(start_date, end_date)
 
-        #Value counts
-        song_counts = df['Track Description'].value_counts()
-
-        return song_counts
-
-
-    def __top_artists(self, start_date=None, end_date=None) -> pd.Series:
-        df = self.__filter_by_date(start_date, end_date)
-
-        #Value counts
-        artist_counts = df['Artist'].value_counts()
-
-        return artist_counts
-    
-
-    def __clean_song_formats(self, df) -> pd.Series:
-        #Split artist and song
+    #Private helpers
+    def __clean_song_formats(self, df) -> pd.DataFrame:
         df[['Artist', 'Song']] = df['Track Description'].str.split(' - ', n=1, expand=True)
-
-        #Remove invalid descriptions
         df = df.dropna(subset=['Song', 'Artist'])
-
         return df
-    
-    def __filter_by_date(self, start_date=None, end_date=None):
+
+    def __filter_by_date(self, start_date=None, end_date=None) -> pd.DataFrame:
         df = self.df_clean
         if start_date:
             df = df[df['Date Played'] >= pd.to_datetime(start_date)]
         if end_date:
             df = df[df['Date Played'] <= pd.to_datetime(end_date)]
-
         return df
-    
-    def most_played_songs_plays(self, number=None, start_date=None, end_date=None) -> pd.Series:
-        """Return top n songs based on amount of plays"""
 
-        songs = self.__top_songs(start_date, end_date).head(number)
-
-        if number:
-            print(f"Top {number} songs by number of plays:")
-            for index, (song, count) in enumerate(songs.items(), start=1):
-                print(f"{index}. {song} — {count} plays")
-
-        return songs
-    
-    def most_played_artists_plays(self, number=None, start_date=None, end_date=None) -> pd.Series:
-        """Return top n artists based on amount of plays"""
-
-        artists = self.__top_artists(start_date, end_date).head(number)
-
-        if number:
-            print(f"Top {number} artists by amount of plays:")
-            for index, (artist, count) in enumerate(artists.items(), start=1):
-                print(f"{index}. {artist} — {count} plays")
-
-        return artists
-    
-    def most_played_songs_duration(self, number=None, start_date=None, end_date=None) -> pd.Series:
-        """Return top n songs based on total listening time (min)"""
+    def __top_songs(self, start_date=None, end_date=None) -> pd.Series:
         df = self.__filter_by_date(start_date, end_date)
+        return df['Track Description'].value_counts()
 
+    def __top_artists(self, start_date=None, end_date=None) -> pd.Series:
+        df = self.__filter_by_date(start_date, end_date)
+        return df['Artist'].value_counts()
+
+    #Plays methods
+    def most_played_songs_plays(self, number=None, start_date=None, end_date=None) -> pd.Series:
+        return self.__top_songs(start_date, end_date).head(number)
+
+    def most_played_artists_plays(self, number=None, start_date=None, end_date=None) -> pd.Series:
+        return self.__top_artists(start_date, end_date).head(number)
+
+    #Duration methods
+    def most_played_songs_duration(self, number=None, start_date=None, end_date=None) -> pd.Series:
+        df = self.__filter_by_date(start_date, end_date)
         song_duration = df.groupby(['Artist','Song'])['Play Duration Milliseconds'].sum()
-        song_duration = song_duration / (1000 * 60)
-        top_songs = song_duration.sort_values(ascending=False).head(number)
-
-        if number:
-            print(f"Top {number} songs by total listening time:")
-            for index, ((artist, song), duration) in enumerate(top_songs.items(), start=1):
-                print(f"{index}. {artist} - {song} - {duration:.0f} min")
-
-        return top_songs
+        song_duration = song_duration / (1000 * 60)  # convert to minutes
+        song_duration = song_duration.round(2)
+        return song_duration.sort_values(ascending=False).head(number)
 
     def most_played_artists_duration(self, number=None, start_date=None, end_date=None) -> pd.Series:
-        """Return top n artists based on total listening time (min)"""
-
         df = self.__filter_by_date(start_date, end_date)
-
         artist_duration = df.groupby('Artist')['Play Duration Milliseconds'].sum()
-        artist_duration = artist_duration / (1000 * 60)
-        top_artists = artist_duration.sort_values(ascending=False).head(number)
+        artist_duration = artist_duration / (1000 * 60)  # convert to minutes
+        artist_duration = artist_duration.round(2)
+        return artist_duration.sort_values(ascending=False).head(number)
 
-        if number:
-            print(f"Top {number} artists by total listening time:")
-            for index, (artist, duration) in enumerate(top_artists.items(), start=1):
-                print(f"{index}. {artist} - {duration:.0f} min")
-
-        return top_artists
-    
-    def top_per_year(self, category, listening_type, year, n=None):
-        """Returns data based on one inputted year"""
-
+    def top_per_year(self, category, listening_type, year=None, n=None):
+        """
+        Return top items for a year or all-time in a JSON-friendly format:
+        - Artists: {artist: value}
+        - Songs: {artist - song: value}
+        Works for both 'plays' and 'duration'.
+        
+        If `year` is None, returns all-time stats.
+        """
         category = category.lower()
         listening_type = listening_type.lower()
-        year_start = f"{year}/01/01"
-        year_end = f"{year}/12/31"
-        
+
+        if year is not None:
+            start_date = f"{year}/01/01"
+            end_date = f"{year}/12/31"
+        else:
+            start_date = None
+            end_date = None
+
         if category in ['artists', 'artist']:
             if listening_type == 'plays':
-                top_in_year = self.most_played_artists_plays(n, year_start, year_end)
+                series = self.most_played_artists_plays(n, start_date, end_date)
             elif listening_type == 'duration':
-                top_in_year = self.most_played_artists_duration(n, year_start, year_end)
+                series = self.most_played_artists_duration(n, start_date, end_date)
             else:
-                raise ValueError("Invalid listening type: must be 'plays' or 'duration'")
+                raise ValueError("Invalid listening_type: must be 'plays' or 'duration'")
+            result = {str(k): v for k, v in series.items()}
 
         elif category in ['songs', 'song']:
             if listening_type == 'plays':
-                top_in_year = self.most_played_songs_plays(n, year_start, year_end)
+                series = self.most_played_songs_plays(n, start_date, end_date)
             elif listening_type == 'duration':
-                top_in_year = self.most_played_songs_duration(n, year_start, year_end)
+                series = self.most_played_songs_duration(n, start_date, end_date)
             else:
-                raise ValueError("Invalid listening type: must be 'plays' or 'duration'")
-        
+                raise ValueError("Invalid listening_type: must be 'plays' or 'duration'")
+            result = {}
+            for key, value in series.items():
+                if isinstance(key, tuple):
+                    result[f"{key[0]} - {key[1]}"] = value
+                else:
+                    result[str(key)] = value
+
         else:
-            raise ValueError("Invalid category")
+            raise ValueError("Invalid category: must be 'artists' or 'songs'")
 
-        return top_in_year
+        return result
 
-
-
-    def summary_report(self, start_date=None, end_date=None):
-        """Overall summary of listening history within optional date range"""
+    #Summary
+    def yearly_summary_report(self, start_date=None, end_date=None):
         df = self.__filter_by_date(start_date, end_date)
-        total_listening_hours = df['Play Duration Milliseconds'].sum() / (1000*60*60)
-        unique_artists = df['Artist'].nunique()
-        unique_songs = df['Song'].nunique()
-        print(f"Total listening time: {total_listening_hours:.2f} hours")
-        print(f"Unique artists: {unique_artists}")
-        print(f"Unique songs: {unique_songs}")
-
-        data = {
-            "total_hours": round(total_listening_hours, 2),
-            "unique_artists": int(unique_artists),
-            "unique_songs": int(unique_songs)
+        total_hours = df['Play Duration Milliseconds'].sum() / (1000 * 60 * 60)
+        return {
+            "total_hours": round(total_hours, 2),
+            "unique_artists": int(df['Artist'].nunique()),
+            "unique_songs": int(df['Song'].nunique())
         }
-        return data
+
+    def monthly_summary(self, year=None):
+        """
+        Returns monthly summary: total hours, unique artists, unique songs per month.
+        If year is None, considers all-time data.
+        """
+        if year:
+            start_date = f"{year}/01/01"
+            end_date = f"{year}/12/31"
+        else:
+            start_date = None
+            end_date = None
+
+        df = self.__filter_by_date(start_date, end_date).copy()
+        df['YearMonth'] = df['Date Played'].dt.to_period('M')
+
+        monthly = df.groupby('YearMonth').agg(
+            total_hours=('Play Duration Milliseconds', lambda x: round(x.sum()/(1000*60*60), 2)),
+            unique_artists=('Artist', 'nunique'),
+            unique_songs=('Song', 'nunique')
+        )
+
+        monthly.index = monthly.index.astype(str)
+        return monthly.to_dict(orient='index')
+    
+if __name__ == "__main__":
+    music = analyse_music_history('')
