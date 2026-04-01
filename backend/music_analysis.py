@@ -1,4 +1,5 @@
 import pandas as pd
+import seaborn as sb
 
 class analyse_music_history:
     def __init__(self, filepath):
@@ -123,16 +124,21 @@ class analyse_music_history:
             end_date = None
 
         df = self.__filter_by_date(start_date, end_date).copy()
-        df['YearMonth'] = df['Date Played'].dt.to_period('M')
+        if df.empty:
+            return {}  # avoid errors if no data
 
-        monthly = df.groupby('YearMonth').agg(
+        # Extract month number for easier frontend use
+        df['Month'] = df['Date Played'].dt.month
+
+        monthly = df.groupby('Month').agg(
             total_hours=('Play Duration Milliseconds', lambda x: round(x.sum()/(1000*60*60), 2)),
             unique_artists=('Artist', 'nunique'),
             unique_songs=('Song', 'nunique')
         )
 
-        monthly.index = monthly.index.astype(str)
         return monthly.to_dict(orient='index')
     
 if __name__ == "__main__":
-    music = analyse_music_history('')
+    music = analyse_music_history('backend\Data\Apple Music - Play History Daily Tracks.csv')
+
+    print(music.monthly_summary(2024))

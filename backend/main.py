@@ -38,5 +38,12 @@ def yearly_summary(year:int):
     data = music_data.yearly_summary_report(start_date, end_date)
     return data
 
+@app.get("/monthly_summary/{year}")
+def monthly_summary(year: int):
+    if year == -1:  # matches your React "All time" value
+        year = None
+    data = music_data.monthly_summary(year)
+    return data
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
