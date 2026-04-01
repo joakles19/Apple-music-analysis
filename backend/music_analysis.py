@@ -1,5 +1,4 @@
 import pandas as pd
-import seaborn as sb
 
 class analyse_music_history:
     def __init__(self, filepath):
@@ -7,13 +6,18 @@ class analyse_music_history:
         self.history_df = pd.read_csv(filepath)
         self.history_df['Date Played'] = pd.to_datetime(self.history_df['Date Played'], format='%Y%m%d')
 
-        # Clean dataframe (split artist and song)
-        self.df_clean = self.__clean_song_formats(self.history_df)
+        # Clean dataframe (split artist and song and remove skips)
+        self.df = self.__clean_song_formats(self.history_df)
+        self.df_clean = self.__remove_skips(self.df)
 
     #Private helpers
     def __clean_song_formats(self, df) -> pd.DataFrame:
         df[['Artist', 'Song']] = df['Track Description'].str.split(' - ', n=1, expand=True)
         df = df.dropna(subset=['Song', 'Artist'])
+        return df
+    
+    def __remove_skips(self, df) -> pd.DataFrame:
+        df = df[(df['Play Duration Milliseconds'] != 0) & (df['End Reason Type'] != 'TRACK_SKIPPED_FORWARDS')]
         return df
 
     def __filter_by_date(self, start_date=None, end_date=None) -> pd.DataFrame:
@@ -100,6 +104,67 @@ class analyse_music_history:
             raise ValueError("Invalid category: must be 'artists' or 'songs'")
 
         return result
+    
+    def top_per_month(self, category, listening_type, year, n=10):
+        """
+        Returns top items per month for a given year.
+        - category: 'artists' or 'songs'
+        - listening_type: 'plays' or 'duration'
+        - year: the year to analyze
+        - n: number of top items per month to return (default 1)
+        
+        Returns a dict of the form:
+        {
+            'YYYY-MM': { 'item_name': value, ... },
+            ...
+        }
+        """
+        category = category.lower()
+        listening_type = listening_type.lower()
+
+        start_date = f"{year}/01/01"
+        end_date = f"{year}/12/31"
+
+        df = self.__filter_by_date(start_date, end_date).copy()
+        df['YearMonth'] = df['Date Played'].dt.month
+
+        result = {}
+
+        for month, month_df in df.groupby('YearMonth'):
+            if category in ['artists', 'artist']:
+                if listening_type == 'plays':
+                    counts = month_df['Artist'].value_counts().head(n)
+                elif listening_type == 'duration':
+                    counts = month_df.groupby('Artist')['Play Duration Milliseconds'].sum()
+                    counts = (counts / (1000*60)).round(2)
+                    counts = counts.sort_values(ascending=False).head(n)
+                else:
+                    raise ValueError("Invalid listening_type: must be 'plays' or 'duration'")
+                month_result = {str(k): v for k, v in counts.items()}
+
+            elif category in ['songs', 'song']:
+                if listening_type == 'plays':
+                    counts = month_df['Track Description'].value_counts().head(n)
+                elif listening_type == 'duration':
+                    counts = month_df.groupby(['Artist','Song'])['Play Duration Milliseconds'].sum()
+                    counts = (counts / (1000*60)).round(2)
+                    counts = counts.sort_values(ascending=False).head(n)
+                else:
+                    raise ValueError("Invalid listening_type: must be 'plays' or 'duration'")
+
+                month_result = {}
+                for key, value in counts.items():
+                    if isinstance(key, tuple):
+                        month_result[f"{key[0]} - {key[1]}"] = value
+                    else:
+                        month_result[str(key)] = value
+            else:
+                raise ValueError("Invalid category: must be 'artists' or 'songs'")
+
+            result[month] = month_result
+
+        return result
+
 
     #Summary
     def yearly_summary_report(self, start_date=None, end_date=None):
@@ -111,7 +176,7 @@ class analyse_music_history:
             "unique_songs": int(df['Song'].nunique())
         }
 
-    def monthly_summary(self, year=None):
+    def monthly_summary_report(self, year=None):
         """
         Returns monthly summary: total hours, unique artists, unique songs per month.
         If year is None, considers all-time data.
@@ -140,5 +205,4 @@ class analyse_music_history:
     
 if __name__ == "__main__":
     music = analyse_music_history('backend\Data\Apple Music - Play History Daily Tracks.csv')
-
-    print(music.monthly_summary(2024))
+    print(music.top_per_month('songs', 'duration', 2025,1))

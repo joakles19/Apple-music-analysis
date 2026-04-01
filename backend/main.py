@@ -40,9 +40,19 @@ def yearly_summary(year:int):
 
 @app.get("/monthly_summary/{year}")
 def monthly_summary(year: int):
-    if year == -1:  # matches your React "All time" value
+    if year == -1:
         year = None
-    data = music_data.monthly_summary(year)
+    data = music_data.monthly_summary_report(year)
+    return data
+
+@app.get("/monthly_artists/{year}")
+def top_artists_month(year:int, metric:str="plays"):
+    data = music_data.top_per_month('artists', metric, year)
+    return data
+
+@app.get("/monthly_songs/{year}")
+def top_artists_month(year:int, metric:str="plays"):
+    data = music_data.top_per_month('songs', metric, year)
     return data
 
 if __name__ == "__main__":
