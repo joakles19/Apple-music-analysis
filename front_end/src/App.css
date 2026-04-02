@@ -1,30 +1,40 @@
-/* Reset */
-body {
+/* ===========================
+   RESET & BASE STYLES
+=========================== */
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+}
+
+body {
   font-family: "Segoe UI", sans-serif;
   background: linear-gradient(135deg, #38bdf8, #6366f1);
   color: #0f172a;
+  overflow-x: hidden; /* prevent horizontal scroll */
 }
 
-/* Layout */
+/* ===========================
+   LAYOUT
+=========================== */
 .container {
-  max-width: 1100px;
-  margin: auto;
-  padding: 20px;
   display: flex;
-  position: relative;
+  flex-direction: row;
+  min-height: 100vh;
 }
 
-/* Controls - fixed left */
+/* ---------------------------
+   FIXED CONTROLS
+--------------------------- */
 .controls {
   position: fixed;
   left: 20px;
   top: 10%;
-  align-self: flex-start;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 180px;
+  gap: 15px;
+  width: 180px;
+  z-index: 10;
 }
 
 .control-group {
@@ -33,16 +43,15 @@ body {
 }
 
 .control-group label {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   color: white;
-  text-align: left;
 }
 
 select {
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: none;
   background: white;
   color: #0f172a;
@@ -50,64 +59,102 @@ select {
   cursor: pointer;
 }
 
-/* Main content area (charts, cards) */
+.navigation-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+}
+
+.goto-monthly-btn,
+.goto-yearly-btn {
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background-color: #4f46e5;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.goto-monthly-btn:hover,
+.goto-yearly-btn:hover {
+  background-color: #6366f1;
+  transform: translateY(-1px);
+}
+
+.goto-monthly-btn:active,
+.goto-yearly-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* ---------------------------
+   MAIN CONTENT
+--------------------------- */
 .main-content {
+  flex: 1; /* fill remaining space */
+  padding: 15px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 100vh;
+  margin-left: 220px; /* space for fixed controls */
+  overflow-x: hidden;
 }
 
-/* Title */
+/* ===========================
+   TITLES & CARDS
+=========================== */
 .title {
-  font-size: 2.8rem;
-  font-weight: 800;
+  font-size: 2.2rem;
+  font-weight: 700;
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   color: white;
-  text-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  text-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-/* Cards */
 .card {
   background: white;
-  padding: 20px;
-  border-radius: 18px;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+  padding: 15px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.2);
 }
 
-.card h2 {
+.card h2, .card h3 {
   margin-top: 0;
   color: #1e293b;
 }
 
-/* Yearly summary box */
+/* ===========================
+   YEARLY SUMMARY
+=========================== */
 .yearlySummary {
   display: flex;
-  flex-direction: column; /* header on top */
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 25px;
-  padding: 1rem;
-  background-color: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+  padding: 0.8rem;
+  margin-bottom: 10px;
 }
 
-/* Container for the three pieces of info */
 .yearlySummary-grid {
-  display: flex;               /* horizontal line */
-  justify-content: space-around; /* spread evenly */
-  align-items: center;
+  display: flex;
+  justify-content: space-around;
   width: 100%;
-  margin-top: 0.5rem;         /* space below header */
+  margin-top: 0.5rem;
 }
 
-/* Each info piece stacked vertically */
 .yearlySummary-grid > div {
   display: flex;
   flex-direction: column;
@@ -115,41 +162,43 @@ select {
 }
 
 .label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #64748b;
 }
 
 .value {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: bold;
   color: #2563eb;
 }
 
-/* Container for monthly buttons + summary */
+/* ===========================
+   MONTHLY INFO
+=========================== */
 .monthly-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-  margin-top: 2rem;
+  gap: 1.2rem;
+  margin-top: 1.5rem;
 }
 
-/* Buttons container */
 .month-btns {
   display: flex;
-  justify-content: center; 
-  gap: 1rem;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 5px;
 }
 
-/* Individual buttons */
 .month-btn {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
+  flex: 0 0 auto;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
   border: none;
   background-color: #e0e0e0;
   color: #333;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: background-color 0.2s, transform 0.1s;
 }
 
@@ -162,44 +211,41 @@ select {
   background-color: #bdbdbd;
 }
 
-/* Monthly summary box */
 .monthly-summary {
   display: flex;
-  flex-direction: column; /* stack header and info vertically */
+  flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 600px;
+  max-width: 500px;
   background-color: #fafafa;
   border-radius: 10px;
-  padding: 1rem;
+  padding: 0.8rem;
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-/* Container for the three pieces of info */
 .monthly-summary .summary-grid {
-  display: flex;             /* horizontal line */
-  justify-content: space-around; /* spread evenly */
-  align-items: center;
+  display: flex;
+  justify-content: space-around;
   width: 100%;
-  margin-top: 0.5rem;       /* space below header */
+  margin-top: 0.5rem;
 }
 
-/* Each info piece stacked vertically */
 .monthly-summary .summary-grid > div {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* Grid layout */
+/* ===========================
+   TOP ARTISTS & SONGS GRID
+=========================== */
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 15px;
 }
 
-/* Lists */
 .list {
   list-style: none;
   padding: 0;
@@ -209,9 +255,9 @@ select {
 .list li {
   display: flex;
   justify-content: space-between;
-  padding: 12px 10px;
+  padding: 10px 8px;
   border-bottom: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: background 0.2s;
 }
 
@@ -222,4 +268,105 @@ select {
 .list li span:last-child {
   font-weight: 600;
   color: #4f46e5;
+}
+
+/* ===========================
+   TIMELINE HORIZONTAL SCROLL
+=========================== */
+.timeline-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  padding: 15px 0;
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+}
+
+.timeline-wrapper::-webkit-scrollbar {
+  height: 10px;
+}
+
+.timeline-wrapper::-webkit-scrollbar-thumb {
+  background: #4f46e5;
+  border-radius: 3px;
+}
+
+.timeline-wrapper::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.05);
+  border-radius: 3px;
+}
+
+.timeline-container {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.timeline-card {
+  flex: 0 0 auto;
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: rgba(255,255,255,0.95);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+  white-space: normal;
+  box-sizing: border-box;
+}
+
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  background: #4f46e5;
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.timeline-content h4 {
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.timeline-bar {
+  height: 5px;
+  background: #4f46e5;
+  border-radius: 3px;
+  width: 100%;
+  margin-top: 5px;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+@media (max-width: 768px) {
+  .controls {
+    position: relative;
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    top: auto;
+    left: auto;
+    padding: 10px;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

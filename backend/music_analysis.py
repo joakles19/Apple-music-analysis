@@ -205,4 +205,3 @@ class analyse_music_history:
     
 if __name__ == "__main__":
     music = analyse_music_history('backend\Data\Apple Music - Play History Daily Tracks.csv')
-    print(music.top_per_month('songs', 'duration', 2025,1))

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 function App() {
@@ -8,7 +8,7 @@ function App() {
   const [artists, setArtists] = useState({});
   const [songs, setSongs] = useState({});
   const [yearlySummary, setYearlySummary] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(1);
   const [monthlySummary, setMonthlySummary] = useState({});
   const [artistsMonthly, setArtistsMonthly] = useState({});
   const [songsMonthly, setSongsMonthly] = useState({});
@@ -19,6 +19,21 @@ function App() {
     "January","February","March","April","May","June",
     "July","August","September","October","November","December"
   ];
+  const monthlyTimeline = Array.from({ length: 12 }, (_, i) => {
+    const month = i + 1;
+    const topSong = Object.entries(songsMonthly[month] || {})[0]?.[0] || "N/A";
+    const topArtist = Object.entries(artistsMonthly[month] || {})[0]?.[0] || "N/A";
+
+    return {
+      month,
+      monthName: months[i].slice(0,3),
+      topSong,
+      topArtist,
+    };
+  });
+  //References
+  const monthlyRef = useRef(null);
+  const yearRef = useRef(null)
 
   // Fetch data whenever year or metric changes
   useEffect(() => {
@@ -71,64 +86,92 @@ function App() {
             <option value="duration">Duration</option>
           </select>
         </div>
+        
+        {year !== -1 && (
+          <div className="navigation-btns">
+            <button className="goto-yearly-btn" onClick={() => yearRef.current?.scrollIntoView({behavior: "smooth"})}>
+                Yearly review
+            </button>
+            <button className="goto-monthly-btn" onClick={() => monthlyRef.current?.scrollIntoView({behavior: "smooth"})}>
+                Monthly review
+            </button>
+          </div>
+
+        )}
       </div>
 
       {/* Main Content */}
       <div className="main-content">
-
-        {/* Yearly Summary */}
-        {yearlySummary && (
-          <div className="card yearlySummary">
-            <h2>{displayYear} Summary</h2>
-            <div className="yearlySummary-grid">
-              <div>
-                <p className="label">Total Hours</p>
-                <p className="value">{yearlySummary.total_hours}</p>
-              </div>
-              <div>
-                <p className="label">Artists</p>
-                <p className="value">{yearlySummary.unique_artists}</p>
-              </div>
-              <div>
-                <p className="label">Songs</p>
-                <p className="value">{yearlySummary.unique_songs}</p>
+        <div className="yearly-info">
+          {/* Yearly Summary */}
+          {yearlySummary && (
+            <div className="card yearlySummary" ref={yearRef}>
+              <h2>{displayYear} Summary</h2>
+              <div className="yearlySummary-grid">
+                <div>
+                  <p className="label">Total Hours</p>
+                  <p className="value">{yearlySummary.total_hours}</p>
+                </div>
+                <div>
+                  <p className="label">Artists</p>
+                  <p className="value">{yearlySummary.unique_artists}</p>
+                </div>
+                <div>
+                  <p className="label">Songs</p>
+                  <p className="value">{yearlySummary.unique_songs}</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Top Artists & Songs */}
-        <div className="grid">
-          <div className="card">
-            <h2>Top Artists of the Year</h2>
-            <ul className="list">
-              {Object.entries(artists || {}).map(([artist, metrics]) => (
-                <li key={artist}>
-                  <span>{artist}</span>
-                  <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
-                </li>
-              ))}
-            </ul>
+          {/* Top Artists & Songs */}
+          <div className="grid">
+            <div className="card">
+              <h2>Top Artists of the Year</h2>
+              <ul className="list">
+                {Object.entries(artists || {}).map(([artist, metrics]) => (
+                  <li key={artist}>
+                    <span>{artist}</span>
+                    <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="card">
+              <h2>Top Songs of the Year</h2>
+              <ul className="list">
+                {Object.entries(songs || {}).map(([song, metrics]) => (
+                  <li key={song}>
+                    <span>{song}</span>
+                    <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <div className="card">
-            <h2>Top Songs of the Year</h2>
-            <ul className="list">
-              {Object.entries(songs || {}).map(([song, metrics]) => (
-                <li key={song}>
-                  <span>{song}</span>
-                  <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
-                </li>
+          <div className="timeline-wrapper">
+            <div className="timeline-container">
+              {monthlyTimeline.map(item => (
+                <div key={item.month} className="timeline-card">
+                  <div className="timeline-dot"></div>
+                  <div className="timeline-content">
+                    <h4>{item.monthName}</h4>
+                    <p><strong>Top Artist:</strong> {item.topArtist}</p>
+                    <p><strong>Top Song:</strong> {item.topSong}</p>
+                    <div className="timeline-bar" style={{ width: `${item.hours * 10 || 50}px` }}></div>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
-
         {/* Monthly Section */}
         {year !== -1 && (
           <div className="monthly-info">
             {/* Month Buttons */}
-            <div className="month-btns">
+            <div className="month-btns" ref={monthlyRef}>
               {months.map((month, i) => (
                 <button
                   key={month}
