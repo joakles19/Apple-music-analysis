@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer
+} from "recharts";
 import "./App.css";
 
 function App() {
@@ -12,7 +16,7 @@ function App() {
   const [monthlySummary, setMonthlySummary] = useState({});
   const [artistsMonthly, setArtistsMonthly] = useState({});
   const [songsMonthly, setSongsMonthly] = useState({});
-
+  const [timelineData, setTimelineData] = useState([])
   // Constants
   const displayYear = year === -1 ? "All time" : year;
   const months = [
@@ -60,7 +64,11 @@ function App() {
     fetch(`http://127.0.0.1:8000/monthly_songs/${year}?metric=${metric}`)
       .then(res => res.json())
       .then(setSongsMonthly);
-  }, [year, metric]);
+
+    fetch(`http://127.0.0.1:8000/duration_timeline/${year}`)
+      .then(res => res.json())
+      .then(setTimelineData);
+      }, [year, metric]);
 
   return (
     <div className="container">
@@ -127,7 +135,7 @@ function App() {
           {/* Top Artists & Songs */}
           <div className="grid">
             <div className="card">
-              <h2>Top Artists of the Year</h2>
+              <h2>Top Artists of {displayYear}</h2>
               <ul className="list">
                 {Object.entries(artists || {}).map(([artist, metrics]) => (
                   <li key={artist}>
@@ -139,7 +147,7 @@ function App() {
             </div>
 
             <div className="card">
-              <h2>Top Songs of the Year</h2>
+              <h2>Top Songs of {displayYear}</h2>
               <ul className="list">
                 {Object.entries(songs || {}).map(([song, metrics]) => (
                   <li key={song}>
@@ -151,25 +159,68 @@ function App() {
             </div>
           </div>
 
-          <div className="timeline-wrapper">
-            <div className="timeline-container">
-              {monthlyTimeline.map(item => (
-                <div key={item.month} className="timeline-card">
-                  <div className="timeline-dot"></div>
-                  <div className="timeline-content">
-                    <h4>{item.monthName}</h4>
-                    <p><strong>Top Artist:</strong> {item.topArtist}</p>
-                    <p><strong>Top Song:</strong> {item.topSong}</p>
-                    <div className="timeline-bar" style={{ width: `${item.hours * 10 || 50}px` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="card duration-timeline">
+            {timelineData.length > 0 && (
+              <>
+                <h2>Listening Duration Over Time</h2>
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fill: "#64748b", fontSize: 12 }}
+                      axisLine={{ stroke: "#e2e8f0" }}
+                      tickLine={false}
+                      label={{ value: year === -1 ? "Year" : "Month", position: "insideBottom", offset: -15, fill: "#64748b", fontSize: 13 }}
+                    />
+                    <YAxis
+                      tick={{ fill: "#64748b", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `${v}m`}
+                      label={{ value: "Minutes", angle: -90, position: "insideLeft", offset: -5, fill: "#64748b", fontSize: 13 }}
+                    />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "10px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                      labelStyle={{ color: "#1e293b", fontWeight: "bold", marginBottom: "4px" }}
+                      itemStyle={{ color: "#4f46e5" }}
+                      formatter={(value) => [`${value.toLocaleString()} min`, "Duration"]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="minutes"
+                      stroke="#4f46e5"
+                      strokeWidth={2.5}
+                      dot={{ r: 4, fill: "#4f46e5", strokeWidth: 0 }}
+                      activeDot={{ r: 7, fill: "#fff", stroke: "#4f46e5", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
+            )}
           </div>
+
         </div>
         {/* Monthly Section */}
         {year !== -1 && (
           <div className="monthly-info">
+
+            <div className="timeline-wrapper">
+              <div className="timeline-container">
+                {monthlyTimeline.map(item => (
+                  <div key={item.month} className="timeline-card">
+                    <div className="timeline-dot"></div>
+                    <div className="timeline-content">
+                      <h4>{item.monthName}</h4>
+                      <p><strong>Top Artist:</strong> {item.topArtist}</p>
+                      <p><strong>Top Song:</strong> {item.topSong}</p>
+                      <div className="timeline-bar" style={{ width: `${item.hours * 10 || 50}px` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Month Buttons */}
             <div className="month-btns" ref={monthlyRef}>
               {months.map((month, i) => (

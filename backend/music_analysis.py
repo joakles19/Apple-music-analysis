@@ -1,4 +1,8 @@
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import io, base64
 
 class analyse_music_history:
     def __init__(self, filepath):
@@ -190,9 +194,8 @@ class analyse_music_history:
 
         df = self.__filter_by_date(start_date, end_date).copy()
         if df.empty:
-            return {}  # avoid errors if no data
+            return {}
 
-        # Extract month number for easier frontend use
         df['Month'] = df['Date Played'].dt.month
 
         monthly = df.groupby('Month').agg(
@@ -203,5 +206,39 @@ class analyse_music_history:
 
         return monthly.to_dict(orient='index')
     
+    #All time analysis
+    def __calculate_duration(self, year, month=None):
+        start_date = f"{year}/01/01"
+        end_date = f"{year}/12/31"
+
+        df = self.__filter_by_date(start_date, end_date)
+
+        if month:
+            df = df[df['Date Played'].dt.month == month]
+    
+        total_minutes = df['Play Duration Milliseconds'].sum() / (1000 * 60)
+        return round(total_minutes, 2)
+
+    def listening_duration_timeline(self, year=None):
+        """
+        Returns a list of {label, minutes} dicts for use in frontend charting.
+        """
+        durations = {}
+
+        if year is not None:
+            labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+            for m in range(1, 13):
+                durations[labels[m - 1]] = float(self.__calculate_duration(year, m))
+        else:
+            min_year = self.df_clean['Date Played'].dt.year.min()
+            max_year = self.df_clean['Date Played'].dt.year.max()
+            for y_ in range(min_year, max_year + 1):
+                durations[str(y_)] = float(self.__calculate_duration(y_))
+
+        return [{"label": k, "minutes": v} for k, v in durations.items()]
+
+    
 if __name__ == "__main__":
     music = analyse_music_history('backend\Data\Apple Music - Play History Daily Tracks.csv')
+
+    music.listening_duration_timeline()

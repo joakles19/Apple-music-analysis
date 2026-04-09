@@ -51,9 +51,16 @@ def top_artists_month(year:int, metric:str="plays"):
     return data
 
 @app.get("/monthly_songs/{year}")
-def top_artists_month(year:int, metric:str="plays"):
+def top_songs_month(year:int, metric:str="plays"):
     data = music_data.top_per_month('songs', metric, year)
     return data
+
+@app.get("/duration_timeline/{year}")
+def duration_timeline(year:int):
+    if year == -1:
+        year = None
+    timeline = music_data.listening_duration_timeline(year)
+    return timeline
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
