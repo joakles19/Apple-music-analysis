@@ -9,3 +9,6 @@ frontend/build/
 # OS files
 .DS_Store
 Thumbs.db
+
+#VS code
+.vscode
