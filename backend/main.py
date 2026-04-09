@@ -62,5 +62,10 @@ def duration_timeline(year:int):
     timeline = music_data.listening_duration_timeline(year)
     return timeline
 
+@app.get("/top_new_artists/{year}")
+def top_new_artists(year:int, metric:str="plays"):
+    data = music_data.get_top_new_artists(year, metric)
+    return data
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

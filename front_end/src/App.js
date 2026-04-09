@@ -16,7 +16,8 @@ function App() {
   const [monthlySummary, setMonthlySummary] = useState({});
   const [artistsMonthly, setArtistsMonthly] = useState({});
   const [songsMonthly, setSongsMonthly] = useState({});
-  const [timelineData, setTimelineData] = useState([])
+  const [timelineData, setTimelineData] = useState({})
+  const [newArtists, setNewArtists] = useState({})
   // Constants
   const displayYear = year === -1 ? "All time" : year;
   const months = [
@@ -68,6 +69,10 @@ function App() {
     fetch(`http://127.0.0.1:8000/duration_timeline/${year}`)
       .then(res => res.json())
       .then(setTimelineData);
+
+    fetch(`http://127.0.0.1:8000/top_new_artists/${year}?metric=${metric}`)
+      .then(res => res.json())
+      .then(setNewArtists);
       }, [year, metric]);
 
   return (
@@ -132,8 +137,8 @@ function App() {
             </div>
           )}
 
-          {/* Top Artists & Songs */}
-          <div className="grid">
+          {/* Top Artists, Songs & New Favourites */}
+          <div className="top-grid">
             <div className="card">
               <h2>Top Artists of {displayYear}</h2>
               <ul className="list">
@@ -157,7 +162,27 @@ function App() {
                 ))}
               </ul>
             </div>
+
+            {year !== -1 && (
+              <div className="card new-artists">
+                <div className="new-artists-header">
+                  <h2>New Favourites</h2>
+                  <span className="new-artists-year">{year}</span>
+                </div>
+                <p className="new-artists-subtitle">Artists you discovered this year</p>
+                <div className="new-artists-grid">
+                  {Object.entries(newArtists).map(([artist, plays], i) => (
+                    <div key={artist} className="new-artist-card">
+                      <span className="new-artist-rank">#{i + 1}</span>
+                      <span className="new-artist-name">{artist}</span>
+                      <span className="new-artist-plays">{plays} {metric === "duration" ? "min" : "plays"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+          
 
           <div className="card duration-timeline">
             {timelineData.length > 0 && (
@@ -257,7 +282,7 @@ function App() {
 
             {/* Top Artists & Songs per Month */}
             {selectedMonth && (
-              <div className="grid">
+              <div className="top-grid">
                 <div className="card">
                   <h2>Top Artists of {months[selectedMonth - 1]}</h2>
                   <ul className="list">

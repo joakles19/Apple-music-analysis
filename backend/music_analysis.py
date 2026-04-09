@@ -62,6 +62,7 @@ class analyse_music_history:
         artist_duration = artist_duration.round(2)
         return artist_duration.sort_values(ascending=False).head(number)
 
+    #Top in timeframe
     def top_per_year(self, category, listening_type, year=None, n=None):
         """
         Return top items for a year or all-time in a JSON-friendly format:
@@ -206,6 +207,21 @@ class analyse_music_history:
 
         return monthly.to_dict(orient='index')
     
+    #New artists
+    def get_top_new_artists(self, year, metric='plays', n=3, threshold=100):
+        if metric == 'plays':
+            current = self.__top_artists(f"{year}/01/01", f"{year}/12/31")
+            previous = self.__top_artists(None, f"{year-1}/12/31")
+        else:
+            current = self.most_played_artists_duration(start_date=f"{year}/01/01", end_date=f"{year}/12/31")
+            previous = self.most_played_artists_duration(start_date=None, end_date=f"{year-1}/12/31")
+
+        prev_top = set(previous.head(threshold).index)
+        new_artists = current[~current.index.isin(prev_top)]
+        data = {str(k): round(float(v), 2) for k, v in new_artists.head(n).items()}
+
+        return data
+    
     #All time analysis
     def __calculate_duration(self, year, month=None):
         start_date = f"{year}/01/01"
@@ -241,4 +257,4 @@ class analyse_music_history:
 if __name__ == "__main__":
     music = analyse_music_history('backend\Data\Apple Music - Play History Daily Tracks.csv')
 
-    music.listening_duration_timeline()
+    print(music.get_top_new_artists(2020))
