@@ -18,6 +18,9 @@ function App() {
   const [songsMonthly, setSongsMonthly] = useState({});
   const [timelineData, setTimelineData] = useState({})
   const [newArtists, setNewArtists] = useState({})
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResult, setSearchResult] = useState(null)
+  const [searchError, setSearchError] = useState(null)
   // Constants
   const displayYear = year === -1 ? "All time" : year;
   const months = [
@@ -36,6 +39,20 @@ function App() {
       topArtist,
     };
   });
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return
+    setSearchError(null)
+    fetch(`http://127.0.0.1:8000/search/${encodeURIComponent(searchQuery)}?metric=${metric}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setSearchError(data.error)
+          setSearchResult(null)
+        } else {
+          setSearchResult(data)
+        }
+      })
+  }
   //References
   const monthlyRef = useRef(null);
   const yearRef = useRef(null)
@@ -73,6 +90,9 @@ function App() {
     fetch(`http://127.0.0.1:8000/top_new_artists/${year}?metric=${metric}`)
       .then(res => res.json())
       .then(setNewArtists);
+    
+    if (!searchQuery.trim() || !searchResult) return
+    handleSearch();
       }, [year, metric]);
 
   return (
@@ -109,12 +129,57 @@ function App() {
                 Monthly review
             </button>
           </div>
-
         )}
+
       </div>
 
       {/* Main Content */}
       <div className="main-content">
+        <div className="card search-card">
+          <h2>Search Artist</h2>
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Enter an artist"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSearch()}
+            />
+            <button onClick={handleSearch}>Search</button>
+          </div>
+
+          {searchError && <p className="search-error">{searchError}</p>}
+
+          {searchResult && (
+            <div className="search-result">
+              <h3>{searchResult.name} {searchResult.rank && <span className="search-rank">#{searchResult.rank} all time</span>}</h3>
+              <div className="search-stats">
+                <div>
+                  <p className="label">Total Plays</p>
+                  <p className="value">{searchResult.total_plays}</p>
+                </div>
+                <div>
+                  <p className="label">Total Minutes</p>
+                  <p className="value">{searchResult.total_minutes}</p>
+                </div>
+                <div>
+                  <p className="label">First Listened</p>
+                  <p className="value" style={{ fontSize: "1rem" }}>{searchResult.first_listened}</p>
+                </div>
+              </div>
+
+              <h4 style={{ margin: "16px 0 8px", color: "#64748b", fontSize: "0.85rem" }}>Yearly Breakdown</h4>
+              <ul className="list">
+                {Object.entries(searchResult.yearly_breakdown).map(([yr, val]) => (
+                  <li key={yr}>
+                    <span>{yr}</span>
+                    <span>{val} {metric === "duration" ? "min" : "plays"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
         <div className="yearly-info">
           {/* Yearly Summary */}
           {yearlySummary && (
