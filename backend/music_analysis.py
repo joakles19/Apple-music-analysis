@@ -208,7 +208,7 @@ class analyse_music_history:
         return monthly.to_dict(orient='index')
     
     #New artists
-    def get_top_new_artists(self, year, metric='plays', n=3, threshold=100):
+    def get_top_new_artists(self, year, metric='plays', n=3, threshold=50):
         if metric == 'plays':
             current = self.__top_artists(f"{year}/01/01", f"{year}/12/31")
             previous = self.__top_artists(None, f"{year-1}/12/31")
@@ -252,6 +252,16 @@ class analyse_music_history:
                 durations[str(y_)] = float(self.__calculate_duration(y_))
 
         return [{"label": k, "minutes": v} for k, v in durations.items()]
+    
+    def get_top_song_for_artist(self, artist, metric='plays'):
+        df = self.df_clean[self.df_clean['Artist'].str.lower() == artist.lower()]
+        if df.empty:
+            return None
+        if metric == 'duration':
+            top = df.groupby('Song')['Play Duration Milliseconds'].sum().idxmax()
+        else:
+            top = df['Song'].value_counts().idxmax()
+        return top
 
     
 if __name__ == "__main__":

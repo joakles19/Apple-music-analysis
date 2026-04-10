@@ -166,6 +166,10 @@ function App() {
                   <p className="label">First Listened</p>
                   <p className="value" style={{ fontSize: "1rem" }}>{searchResult.first_listened}</p>
                 </div>
+                <div>
+                  <p className="label">Favourite Song by {metric}</p>
+                  <p className="value" style={{ fontSize: "0.88rem" }}>{searchResult.favourite_song}</p>
+                </div>
               </div>
 
               <h4 style={{ margin: "16px 0 8px", color: "#64748b", fontSize: "0.85rem" }}>Yearly Breakdown</h4>
@@ -234,7 +238,7 @@ function App() {
                   <h2>New Favourites</h2>
                   <span className="new-artists-year">{year}</span>
                 </div>
-                <p className="new-artists-subtitle">Artists you discovered this year</p>
+                <p className="new-artists-subtitle">Artists that became a favourite this year</p>
                 <div className="new-artists-grid">
                   {Object.entries(newArtists).map(([artist, plays], i) => (
                     <div key={artist} className="new-artist-card">

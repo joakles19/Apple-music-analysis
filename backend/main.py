@@ -86,9 +86,10 @@ def search(query: str, metric: str = "plays"):
     ranks.index = ranks.index.str.lower()
     rank = int(ranks.index.get_loc(query_lower)) + 1 if query_lower in ranks.index else None
 
+    favourite_song = music_data.get_top_song_for_artist(query, metric)
+
     match_df = match_df.copy()
     match_df['Year'] = match_df['Date Played'].dt.year
-
     yearly = {}
     for year, group in match_df.groupby('Year'):
         if metric == "duration":
@@ -103,6 +104,7 @@ def search(query: str, metric: str = "plays"):
         "total_plays": int(len(match_df)),
         "total_minutes": round(match_df['Play Duration Milliseconds'].sum() / (1000 * 60), 2),
         "first_listened": str(match_df['Date Played'].min().date()),
+        "favourite_song": favourite_song,
         "yearly_breakdown": yearly
     }
 
