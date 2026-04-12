@@ -21,8 +21,14 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResult, setSearchResult] = useState(null)
   const [searchError, setSearchError] = useState(null)
+  const [predictedArtists, setPredictedArtists] = useState(null)
+  const [predictedSongs, setPredictedSongs] = useState(null)
   // Constants
-  const displayYear = year === -1 ? "All time" : year;
+  const yearLabels = {
+    "-1": "All time",
+    "-2": "Predicted 2026"
+  }
+  const displayYear = yearLabels[year] ?? year
   const months = [
     "January","February","March","April","May","June",
     "July","August","September","October","November","December"
@@ -90,6 +96,14 @@ function App() {
     fetch(`http://127.0.0.1:8000/top_new_artists/${year}?metric=${metric}`)
       .then(res => res.json())
       .then(setNewArtists);
+
+    fetch(`http://127.0.0.1:8000/predict_top?category=artists&metric=${metric}`)
+      .then(res => res.json())
+      .then(setPredictedArtists);
+
+    fetch(`http://127.0.0.1:8000/predict_top?category=songs&metric=${metric}`)
+      .then(res => res.json())
+      .then(setPredictedSongs);
     
     if (!searchQuery.trim() || !searchResult) return
     handleSearch();
@@ -109,6 +123,7 @@ function App() {
             {Array.from({ length: 9 }, (_, i) => 2018 + i).map(y => (
               <option key={y} value={y}>{y}</option>
             ))}
+            <option value={-2}>Predicted 2026</option>
           </select>
         </div>
 
@@ -120,7 +135,7 @@ function App() {
           </select>
         </div>
         
-        {year !== -1 && (
+        {year > 0 && (
           <div className="navigation-btns">
             <button className="goto-yearly-btn" onClick={() => yearRef.current?.scrollIntoView({behavior: "smooth"})}>
                 Yearly review
@@ -209,30 +224,48 @@ function App() {
           {/* Top Artists, Songs & New Favourites */}
           <div className="top-grid">
             <div className="card">
-              <h2>Top Artists of {displayYear}</h2>
+              <h2>{year === -2 ? "Predicted Top Artists" : `Top Artists of ${displayYear}`}</h2>
               <ul className="list">
-                {Object.entries(artists || {}).map(([artist, metrics]) => (
-                  <li key={artist}>
-                    <span>{artist}</span>
-                    <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
-                  </li>
-                ))}
+                {year === -2 ? (
+                  predictedArtists?.predictions.map((item, i) => (
+                    <li key={i}>
+                      <span>{item.is_new_discovery ? "? New Discovery" : `#${i + 1} ${item.name}`}</span>
+                      <span>{item.is_new_discovery ? "TBD" : `${item.predicted_total} ${metric === "duration" ? "min" : "plays"}`}</span>
+                    </li>
+                  ))
+                ) : (
+                  Object.entries(artists || {}).map(([artist, metrics]) => (
+                    <li key={artist}>
+                      <span>{artist}</span>
+                      <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
+                    </li>
+                  ))
+                )}
               </ul>
             </div>
 
             <div className="card">
-              <h2>Top Songs of {displayYear}</h2>
+              <h2>{year === -2 ? "Predicted Top Songs" : `Top Songs of ${displayYear}`}</h2>
               <ul className="list">
-                {Object.entries(songs || {}).map(([song, metrics]) => (
-                  <li key={song}>
-                    <span>{song}</span>
-                    <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
-                  </li>
-                ))}
+                {year === -2 ? (
+                  predictedSongs?.predictions.map((item, i) => (
+                    <li key={i}>
+                      <span>{item.is_new_discovery ? "? New Discovery" : `#${i + 1} ${item.name}`}</span>
+                      <span>{item.is_new_discovery ? "TBD" : `${item.predicted_total} ${metric === "duration" ? "min" : "plays"}`}</span>
+                    </li>
+                  ))
+                ) : (
+                  Object.entries(songs || {}).map(([song, metrics]) => (
+                    <li key={song}>
+                      <span>{song}</span>
+                      <span>{metrics} {metric === "duration" ? "min" : "plays"}</span>
+                    </li>
+                  ))
+                )}
               </ul>
             </div>
 
-            {year !== -1 && (
+            {year > 0 && (
               <div className="card new-artists">
                 <div className="new-artists-header">
                   <h2>New Favourites</h2>
@@ -265,6 +298,7 @@ function App() {
                       tick={{ fill: "#64748b", fontSize: 12 }}
                       axisLine={{ stroke: "#e2e8f0" }}
                       tickLine={false}
+                      tickFormatter={(label) => label.endsWith('-01') ? label.split('-')[0] : ''}                      interval={0}
                       label={{ value: year === -1 ? "Year" : "Month", position: "insideBottom", offset: -15, fill: "#64748b", fontSize: 13 }}
                     />
                     <YAxis
@@ -296,7 +330,7 @@ function App() {
 
         </div>
         {/* Monthly Section */}
-        {year !== -1 && (
+        {year > 0 && (
           <div className="monthly-info">
 
             <div className="timeline-wrapper">

@@ -17,25 +17,24 @@ music_data = analyse_music_history("backend\Data\Apple Music - Play History Dail
 
 @app.get("/top-artists/{year}")
 def top_artists(year:int, n:int=10, metric:str="plays"):
-    if year == 'All time':
+    if year == -1:
         year = None
     data = music_data.top_per_year('artist', metric, year, n)
     return data
 
 @app.get("/top-songs/{year}")
 def top_songs(year:int, n:int=10, metric:str="plays"):
-    if year == 'All time':
+    if year == -1:
         year = None
     data = music_data.top_per_year('songs', metric, year, n)
     return data
 
 @app.get("/yearly_summary/{year}")
-def yearly_summary(year:int):
-    if year == 'All time':
-        year = None
-    start_date = f"{year}/01/01"
-    end_date = f"{year}/12/31"
-    data = music_data.yearly_summary_report(start_date, end_date)
+def yearly_summary(year: int):
+    if year == -1:
+        data = music_data.yearly_summary_report()
+    else:
+        data = music_data.yearly_summary_report(f"{year}/01/01", f"{year}/12/31")
     return data
 
 @app.get("/monthly_summary/{year}")
@@ -63,7 +62,9 @@ def duration_timeline(year:int):
     return timeline
 
 @app.get("/top_new_artists/{year}")
-def top_new_artists(year:int, metric:str="plays"):
+def top_new_artists(year: int, metric: str = "plays"):
+    if year == -1:
+        return {}
     data = music_data.get_top_new_artists(year, metric)
     return data
 
@@ -107,6 +108,10 @@ def search(query: str, metric: str = "plays"):
         "favourite_song": favourite_song,
         "yearly_breakdown": yearly
     }
+
+@app.get("/predict_top")
+def predict_top(category: str = "artists", metric: str = "plays"):
+    return music_data.predict_top(category, metric)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

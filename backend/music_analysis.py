@@ -1,8 +1,6 @@
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import io, base64
+from datetime import datetime
 
 class analyse_music_history:
     def __init__(self, filepath):
@@ -246,10 +244,11 @@ class analyse_music_history:
             for m in range(1, 13):
                 durations[labels[m - 1]] = float(self.__calculate_duration(year, m))
         else:
-            min_year = self.df_clean['Date Played'].dt.year.min()
-            max_year = self.df_clean['Date Played'].dt.year.max()
-            for y_ in range(min_year, max_year + 1):
-                durations[str(y_)] = float(self.__calculate_duration(y_))
+            df = self.df_clean.copy()
+            df['YearMonth'] = df['Date Played'].dt.to_period('M')
+            monthly = df.groupby('YearMonth')['Play Duration Milliseconds'].sum() / (1000 * 60)
+            for period, value in monthly.items():
+                durations[str(period)] = round(float(value), 2)
 
         return [{"label": k, "minutes": v} for k, v in durations.items()]
     
@@ -262,9 +261,67 @@ class analyse_music_history:
         else:
             top = df['Song'].value_counts().idxmax()
         return top
+    
+    #Predictions
+    def predict_top(self, category='artists', metric='plays', n=10):
+        today = datetime.now()
+        current_year = today.year
+        day_of_year = today.timetuple().tm_yday
+        days_in_year = 366 if current_year % 4 == 0 else 365
+        remaining_fraction = 1 - (day_of_year / days_in_year)
+
+        if category == 'artists':
+            current = self.__top_artists(f"{current_year}/01/01", today.strftime("%Y/%m/%d"))
+            previous = self.__top_artists(f"{current_year-1}/01/01", f"{current_year-1}/12/31")
+        else:
+            current = self.__top_songs(f"{current_year}/01/01", today.strftime("%Y/%m/%d"))
+            previous = self.__top_songs(f"{current_year-1}/01/01", f"{current_year-1}/12/31")
+
+        results = []
+
+        for item, count in current.head(n).items():
+            daily_rate = count / day_of_year
+            prev_count = previous.get(item, 0)
+            prev_daily = prev_count / days_in_year
+
+            if prev_count > 0:
+                projected_daily = (daily_rate * 0.7) + (prev_daily * 0.3)
+            else:
+                projected_daily = daily_rate
+
+            projected_remaining = projected_daily * (days_in_year * remaining_fraction)
+            predicted_total = round(count + projected_remaining)
+
+            results.append({
+                "name": str(item),
+                "current": int(count),
+                "predicted_total": int(predicted_total),
+                "is_new_discovery": False
+            })
+
+        # Calculate how many discovery slots to add
+        prev_items = set(previous.head(n).index)
+        current_items = set(current.head(n).index)
+        new_discoveries_last_year = len(current_items - prev_items)
+        num_discoveries = max(2, new_discoveries_last_year)
+
+        for i in range(num_discoveries):
+            results.append({
+                "name": f"New Discovery {i + 1}",
+                "current": 0,
+                "predicted_total": None,
+                "is_new_discovery": True
+            })
+
+        return {
+            "year": current_year,
+            "days_remaining": days_in_year - day_of_year,
+            "fraction_complete": round((day_of_year / days_in_year) * 100, 1),
+            "predictions": results[:n]
+        }
 
     
 if __name__ == "__main__":
     music = analyse_music_history('backend\Data\Apple Music - Play History Daily Tracks.csv')
 
-    print(music.get_top_new_artists(2020))
+    print(music.predict_top())
